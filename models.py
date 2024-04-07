@@ -51,10 +51,10 @@ class BikeParking(BaseModel):
     # photo = CharField()  - photos
     admarea_id = ForeignKeyField(AdmAreas)
     district_id = ForeignKeyField(Districts)
-    department_affiliation_id = ForeignKeyField()
+    department_affiliation_id = ForeignKeyField(DepartmentAffiliations)
     address = CharField()
     capacity = IntegerField()
-    object_oper_org_id = ForeignKeyField()
+    # object_oper_org_id = ForeignKeyField()
     longitude = DecimalField(max_digits=10, decimal_places=8)
     latitude = DecimalField(max_digits=11, decimal_places=8)
 
@@ -63,13 +63,13 @@ class BikeParking(BaseModel):
 
 
 class DogParks(BaseModel):
-    name = CharField()
+    global_id = IntegerField()
     # photos
     admarea_id = ForeignKeyField(AdmAreas)
     district_id = ForeignKeyField(Districts)
-    department_affiliation_id = ForeignKeyField()
-    address = CharField()
-    dog_park_area = IntegerField()
+    department_affiliation_id = ForeignKeyField(DepartmentAffiliations)
+    location = CharField()
+    dog_park_area = FloatField()
     lighting = BooleanField()
     fencing = BooleanField()
     longitude = DecimalField(max_digits=10, decimal_places=8)
@@ -114,17 +114,62 @@ class DogParkIdElement(BaseModel):
 
     class Meta:
         db_table = "dog_park_id_element"
-        
+
+
 
 class SportHalls(BaseModel):
     name = CharField()
-    department_affiliation_id = ForeignKeyField()
-    photo = CharField()
-
-
+    name_winter = CharField()
+    admarea_id = ForeignKeyField(AdmAreas)
+    district_id = ForeignKeyField(Districts)
+    department_affiliation_id = ForeignKeyField(DepartmentAffiliations)
+    address = CharField()
+    email = CharField()
+    website = CharField()
+    help_phone = CharField()
+    # ClarificationOfWorkingHoursWinter
+    has_equipment_rental = BooleanField()
+    equipment_rental_comments = CharField()
+    has_tech_service = BooleanField()
+    tech_serv_comments = CharField()
+    has_dressing_room = BooleanField()
+    has_eatery = BooleanField()
+    has_toilet = BooleanField()
+    has_wifi = BooleanField()
+    has_cash_machine = BooleanField()
+    has_first_aid_post = BooleanField()
+    has_music = BooleanField()
+    usage_period_winter = CharField()
+    lighting = CharField()
+    surface_type_winter = CharField()
+    seats = IntegerField()
+    paid = CharField()
+    paid_comments = CharField()
+    disability_friendly = CharField()
+    service_winter = CharField()
+    longitude = DecimalField(max_digits=10, decimal_places=8)
+    latitude = DecimalField(max_digits=11, decimal_places=8)    
 
     class Meta:
         db_table = "sport_halls"
+
+
+class SportHallWinterDimensions(BaseModel):
+    sport_hall_id = ForeignKeyField(SportHalls)
+    square = IntegerField()
+    length = IntegerField()
+    wifth = IntegerField()
+    
+    class Meta:
+        db_table = "sport_hall_winter_dimensions"
+
+
+class SportHallPhotos(BaseModel):
+    sport_hall_id = ForeignKeyField(SportHalls)
+    photo = CharField()
+
+    class Meta:
+        db_table = "sport_hall_photos"
 
 
 class SportHallWorkingHours(BaseModel):
@@ -136,3 +181,6 @@ class SportHallWorkingHours(BaseModel):
     friday = CharField()
     saturday = CharField()
     sunday = CharField()
+
+    class Meta:
+        db_table = "sport_hall_working_hours"
