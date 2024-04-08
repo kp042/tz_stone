@@ -46,19 +46,19 @@ class DepartmentAffiliations(BaseModel):
         db_table = "department_affiliations"
 
 
-class ObjectOperOrgs(BaseModel):
-    name = CharField()
+# class ObjectOperOrgs(BaseModel):
+#     name = CharField()
 
-    class Meta:
-        db_name = "object_oper_orgs"
+#     class Meta:
+#         db_name = "object_oper_orgs"
 
 
-class ObjectOperOrgPhones(BaseModel):
-    object_oper_org_id = ForeignKeyField(ObjectOperOrgs)
-    phone = CharField()
+# class ObjectOperOrgPhones(BaseModel):
+#     object_oper_org_id = ForeignKeyField(ObjectOperOrgs)
+#     phone = CharField()
 
-    class Meta:
-        db_name = "object_oper_org_phones"
+#     class Meta:
+#         db_name = "object_oper_org_phones"
 
 
 class BikeParking(BaseModel):
@@ -70,17 +70,18 @@ class BikeParking(BaseModel):
     department_affiliation_id = ForeignKeyField(DepartmentAffiliations)
     address = CharField()
     capacity = IntegerField()
-    object_oper_org_id = ForeignKeyField(ObjectOperOrgs)
-    longitude = DecimalField(max_digits=10, decimal_places=8)
-    latitude = DecimalField(max_digits=11, decimal_places=8)
+    object_oper_org_name = CharField()
+    object_oper_org_phone = CharField()
+    # object_oper_org_id = ForeignKeyField(ObjectOperOrgs)
+    longitude = DecimalField(max_digits=11, decimal_places=9)
+    latitude = DecimalField(max_digits=12, decimal_places=9)
 
     class Meta:
         db_table = "bike_parking"
 
 
 class DogParks(BaseModel):
-    global_id = IntegerField()
-    # photos
+    global_id = IntegerField()    
     admarea_id = ForeignKeyField(AdmAreas)
     district_id = ForeignKeyField(Districts)
     department_affiliation_id = ForeignKeyField(DepartmentAffiliations)
@@ -88,8 +89,8 @@ class DogParks(BaseModel):
     dog_park_area = FloatField()
     lighting = BooleanField()
     fencing = BooleanField()
-    longitude = DecimalField(max_digits=10, decimal_places=8)
-    latitude = DecimalField(max_digits=11, decimal_places=8)
+    longitude = DecimalField(max_digits=11, decimal_places=9)
+    latitude = DecimalField(max_digits=12, decimal_places=9)
 
     class Meta:
         db_table = "dog_parks"
@@ -134,18 +135,20 @@ class DogParkIdElement(BaseModel):
 
 
 class SportHalls(BaseModel):
+    global_id = IntegerField()
     name = CharField()
     name_winter = CharField()
+    photo_winter = CharField()
     admarea_id = ForeignKeyField(AdmAreas)
     district_id = ForeignKeyField(Districts)
-    department_affiliation_id = ForeignKeyField(DepartmentAffiliations)
+    # department_affiliation_id = ForeignKeyField(DepartmentAffiliations)
     address = CharField()
     email = CharField()
     website = CharField()
     help_phone = CharField()
     # ClarificationOfWorkingHoursWinter
     has_equipment_rental = BooleanField()
-    equipment_rental_comments = CharField()
+    equipment_rental_comments = CharField() # отдельную таблицу?
     has_tech_service = BooleanField()
     tech_serv_comments = CharField()
     has_dressing_room = BooleanField()
@@ -163,8 +166,8 @@ class SportHalls(BaseModel):
     paid_comments = CharField()
     disability_friendly = CharField()
     service_winter = CharField()
-    longitude = DecimalField(max_digits=10, decimal_places=8)
-    latitude = DecimalField(max_digits=11, decimal_places=8)    
+    longitude = DecimalField(max_digits=11, decimal_places=9)
+    latitude = DecimalField(max_digits=12, decimal_places=9)    
 
     class Meta:
         db_table = "sport_halls"

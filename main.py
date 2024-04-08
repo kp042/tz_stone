@@ -33,10 +33,6 @@ def get_response(url: str, flag_apikey: bool = False):
         logging.error(f'Ошибка: {response.status_code}')
 
 
-def get_sport_halls():
-    pass
-
-
 def get_adm_area_id(AdmArea: str):
     logging.info("get_adm_area_id")
     if AdmArea.lower() == "зеленоградский административный округ":
@@ -144,24 +140,24 @@ def get_dogs_parks():
     logging.info("dog parks data added")
 
 
-def get_object_oper_org_id(ObjectOperOrgName: str, ObjectOperOrgPhone: list):
-    logging.info("get_object_oper_org_id")
-    with db:
-        query = ObjectOperOrgs.select(fn.COUNT(ObjectOperOrgs.id)).where(ObjectOperOrgs.name == ObjectOperOrgName)
-        count = query.scalar()        
-        if count == 0:
-            ObjectOperOrgs.insert({ObjectOperOrgs.name: ObjectOperOrgName}).execute()
+# def get_object_oper_org_id(ObjectOperOrgName: str, ObjectOperOrgPhone: list):
+#     logging.info("get_object_oper_org_id")
+#     with db:
+#         query = ObjectOperOrgs.select(fn.COUNT(ObjectOperOrgs.id)).where(ObjectOperOrgs.name == ObjectOperOrgName)
+#         count = query.scalar()        
+#         if count == 0:
+#             ObjectOperOrgs.insert({ObjectOperOrgs.name: ObjectOperOrgName}).execute()
         
-        object_oper_org_id = ObjectOperOrgs.select().where(ObjectOperOrgs.name == ObjectOperOrgName)
+#         object_oper_org_id = ObjectOperOrgs.select().where(ObjectOperOrgs.name == ObjectOperOrgName)
 
-        query = ObjectOperOrgPhones.select(fn.COUNT(ObjectOperOrgPhones.id)).where(ObjectOperOrgPhones.object_oper_org_id == object_oper_org_id \
-                                                                                   and ObjectOperOrgPhones.phone == ObjectOperOrgPhone)
-        count = query.scalar()
-        if count == 0:
-            ObjectOperOrgPhones.insert({ObjectOperOrgPhones.object_oper_org_id: object_oper_org_id,
-                                        ObjectOperOrgPhones.phone: ObjectOperOrgPhone}).execute()
+#         query = ObjectOperOrgPhones.select(fn.COUNT(ObjectOperOrgPhones.id)).where(ObjectOperOrgPhones.object_oper_org_id == object_oper_org_id \
+#                                                                                    and ObjectOperOrgPhones.phone == ObjectOperOrgPhone)
+#         count = query.scalar()
+#         if count == 0:
+#             ObjectOperOrgPhones.insert({ObjectOperOrgPhones.object_oper_org_id: object_oper_org_id,
+#                                         ObjectOperOrgPhones.phone: ObjectOperOrgPhone}).execute()
 
-        return object_oper_org_id
+#         return object_oper_org_id
 
 
 def get_bike_parking():
@@ -178,8 +174,10 @@ def get_bike_parking():
                     "department_affiliation_id": get_department_affiliation_id(data[i]['Cells']['DepartmentalAffiliation']),
                     "address": data[i]['Cells']['Address'],
                     "capacity": data[i]['Cells']['Capacity'],
-                    "object_oper_org_id": get_object_oper_org_id(data[i]['Cells']['ObjectOperOrgName'],
-                                                                 data[i]['Cells']['ObjectOperOrgPhone']),
+                    "object_oper_org_name": "ГКУ Центр организации дорожного движения Правительства Москвы",
+                    "object_oper_org_phone": "(495) 361-78-07",
+                    # "object_oper_org_id": get_object_oper_org_id(data[i]['Cells']['ObjectOperOrgName'],
+                    #                                              data[i]['Cells']['ObjectOperOrgPhone']),
                     "longitude": data[i]['Cells']['geoData']['coordinates'][0],
                     "latitude": data[i]['Cells']['geoData']['coordinates'][1]
                     }
@@ -191,6 +189,55 @@ def get_bike_parking():
             break
         skip += 500
     logging.info("bike parks data added")
+
+
+def get_sport_hall_working_hours():
+    pass
+
+
+def get_sport_halls():
+    skip = 0
+    while True:
+        data = get_response("https://apidata.mos.ru/v1/datasets/916/rows?$top=500&$skip=" + str(skip))
+        for i in range(len(data)):
+            query = {
+                    "global_id": data[i]['global_id'],
+                    "name": data[i]['Cells']['Name'],
+                    "name_winter": data[i]['Cells']['NameWinter'],
+                    "photo_winter": data[i]['Cells']['PhotoWinter'][0]['Photo'],
+                    "admarea_id": get_adm_area_id(data[i]['Cells']['AdmArea']),
+                    "district_id": get_district_id(data[i]['Cells']['District']),
+                    "address": data[i]['Cells']['Address'],
+                    "email": data[i]['Cells']['Email'],
+                    "website": check_website_response(data[i]['Cells']['WebSite']),
+                    "help_phone": data[i]['Cells']['HelpPhone'] if len(data[i]['Cells']['HelpPhone']) != 0 else None,
+                    "has_equipment_rental": data[i]['Cells']['HasEquipmentRental'] == "да",
+                    "equipment_rental_comments": data[i]['Cells']['EquipmentRentalComments'], # add table 
+                    "has_tech_service": data[i]['Cells']['HasTechService'] == "да",
+                    "tech_serv_comments": data[i]['Cells']['TechServiceComments'], # add table 
+                    "has_dressing_room": data[i]['Cells']['HasDressingRoom'] == "да",
+                    "has_eatery": data[i]['Cells']['HasEatery'] == "да",
+                    "has_toilet": data[i]['Cells']['HasToilet'] == "да",
+                    "has_wifi": data[i]['Cells']['HasWifi'] == "да",
+                    "has_cash_machine": data[i]['Cells']['HasCashMachine'] == "да",
+                    "has_first_aid_post": data[i]['Cells']['HasFirstAidPost'] == "да",
+                    "has_music": data[i]['Cells']['HasMusic'] == "да",
+                    "usage_period_winter": data[i]['Cells']['UsagePeriodWinter'],
+                    "lighting": data[i]['Cells']['Lighting'],
+                    "surface_type_winter": data[i]['Cells']['SurfaceTypeWinter'],
+                    "seats": data[i]['Cells']['Seats'],
+                    "paid": data[i]['Cells']['Paid'], # check
+                    "paid_comments": data[i]['Cells']['PaidComments'], # check
+                    "disability_friendly": data[i]['Cells']['DisabilityFriendly'], # check
+                    "service_winter": data[i]['Cells']['ServicesWinter'],
+                    "longitude": data[i]['Cells']['geoData']['coordinates'][0],
+                    "latitude": data[i]['Cells']['geoData']['coordinates'][1]
+                    }
+
+        if len(data) < 500:
+            break
+        skip += 500
+    logging.info("sport halls data added")
 
 
 def scraping_wiki():
@@ -206,16 +253,17 @@ def scraping_wiki():
         query2 = []
         for _, row in admareas_df.iterrows():
             id = AdmAreas.select().where(AdmAreas.name == row.adm_area)
+            district_name = row.district.replace("ё", "е")
             if row.district.find("поселение") != -1:
-                query2.append({"name": row.district.replace("ё", "е").replace(", поселение", ""),
+                query2.append({"name": district_name.replace(", поселение", ""),
                             "district_type_id": 2,
                             "admarea_id": id[0]})
             elif row.district.find("городской округ") != -1:
-                query2.append({"name": row.district.replace("ё", "е").replace(", городской округ", ""),
+                query2.append({"name": district_name.replace(", городской округ", ""),
                             "district_type_id": 3,
                             "admarea_id": id[0]})
             else:
-                query2.append({"name": row.district.replace("ё", "е"),
+                query2.append({"name": district_name,
                             "district_type_id": 1,
                             "admarea_id": id[0]})
         Districts.insert_many(query2).execute()
@@ -228,7 +276,7 @@ def create_db():
                           BikeParking, DogParks, DogParkPhotos, DogParkWorkingHours,
                           DogParkElements, DogParkIdElement, SportHalls,
                           SportHallWinterDimensions, SportHallPhotos, 
-                          SportHallWorkingHours, ObjectOperOrgs, ObjectOperOrgPhones])
+                          SportHallWorkingHours])
         logging.info("stone.db: tables created")
         query = [
             {"name": "район"},

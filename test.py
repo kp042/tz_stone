@@ -85,11 +85,11 @@ if __name__ == "__main__":
     # create_db()
     # scraping_wiki()
     skip = 0    
-    data_count = get_response("https://apidata.mos.ru/v1/datasets/916/count", True)
+    data_count = get_response("https://apidata.mos.ru/v1/datasets/60622/count", True)
     print(data_count)
     count = 0
     while True:        
-        data = get_response("https://apidata.mos.ru/v1/datasets/916/rows?$top=500&$skip=" + str(skip))
+        data = get_response("https://apidata.mos.ru/v1/datasets/60622/rows?$top=500&$skip=" + str(skip))
         query = []
         for i in range(len(data)):
             # AdmArea = data[i]['Cells']['AdmArea']
@@ -108,11 +108,24 @@ if __name__ == "__main__":
             # dep = data[i]['Cells']['Fencing'] == "да"
             # dep = data[i]['Cells']['geoData']['coordinates'][0]
             count += 1
-            print(count, "-", data[i]['global_id'], ": ", type(data[i]['Cells']['ObjectOperOrgPhone']), len(data[i]['Cells']['ObjectOperOrgPhone']))
+            # print(count, "-", data[i]['global_id'], ": ", type(data[i]['Cells']['ObjectOperOrgPhone']), len(data[i]['Cells']['ObjectOperOrgPhone']))
+
+            # if "ГКУ Центр организации дорожного движения" not in data[i]['Cells']['ObjectOperOrgName']:
+            #     print(count, "-", data[i]['global_id'], ": ", data[i]['Cells']['ObjectOperOrgName'])
+            #     print(count, "-", data[i]['global_id'], ": ", data[i]['Cells']['ObjectOperOrgPhone'][0]['OperationOrganizationPhone'])
+            
             # print(dep, ": ", id, ": ", id[0])
             # print(dep, ": ", get_department_affiliation_id(dep))
 
+            # if len(data[i]['Cells']['PhotoWinter']) > 1:
+            #     print(count, "-", data[i]['global_id'], ": ", len(data[i]['Cells']['PhotoWinter']))
 
+            # if isinstance(data[i]['Cells']['ClarificationOfWorkingHoursWinter'], list) == True or len(data[i]['Cells']['ClarificationOfWorkingHoursWinter']) != 0:
+            if len(data[i]['Cells']['EquipmentRentalComments']) != 0:
+                print(count, "-", data[i]['global_id'], ": ", data[i]['Cells']['EquipmentRentalComments'])
+            
+            # if len(data[i]['Cells']['HelpPhoneExtension']) > 0:
+            #     print(data[i]['Cells']['HelpPhoneExtension']) 
 
             # query.append(
             #     {
