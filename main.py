@@ -9,7 +9,15 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 API_URL = "https://apidata.mos.ru/v1/"
 API_KEY = "273c54c8-1509-4f9c-9923-e9050442285e"
-DATASETS = {"bike": 916, "dogs": 2663, "sport": 60622}
+# DATASETS = {"bike": 916, "dogs": 2663, "sport": 60622}
+WEEK_DAYS = {"понедельник": "monday",
+             "вторник": "tuesday",
+             "среда": "wednesday",
+             "четверг": "thursday",
+             "пятница": "friday",
+             "суббота": "saturday",
+             "воскресенье": "sunday"
+             }
 
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -19,8 +27,8 @@ def get_response(url: str, flag_apikey: bool = False):
     api_key_str = "?api_key=" if flag_apikey == True else "&api_key="
     url = url + api_key_str + API_KEY
     response = requests.get(url)
-    if response.status_code == 200:    
-        return response.json()        
+    if response.status_code == 200:
+        return response.json()
     else:
         logging.error(f'Ошибка: {response.status_code}')
 
@@ -30,6 +38,7 @@ def get_sport_halls():
 
 
 def get_adm_area_id(AdmArea: str):
+    logging.info("get_adm_area_id")
     if AdmArea.lower() == "зеленоградский административный округ":
         AdmArea_short = "ЗелАО"
     else:
@@ -40,13 +49,17 @@ def get_adm_area_id(AdmArea: str):
 
 
 def get_district_id(District: str):
+    logging.info("get_district_id")
     District = re.sub(r'^\s*["\s]*(.*?)[\s"]*\s*$', r'\1', re.sub(r'^(городское поселение|район|поселение) | (городское поселение|район|поселение)$', '', District))
+    District = District.replace("ё", "е")
+    logging.info(District)
     with db:
         id = Districts.select().where(Districts.name == District)
-    return id[0]    
+    return id[0]
 
 
 def get_department_affiliation_id(DepartamentalAffiliation: str):
+    logging.info("get_department_affiliation_id")
     with db:
         query = DepartmentAffiliations.select(fn.COUNT(DepartmentAffiliations.id)).where(DepartmentAffiliations.name == DepartamentalAffiliation)
         count = query.scalar()        
@@ -58,6 +71,7 @@ def get_department_affiliation_id(DepartamentalAffiliation: str):
     
 
 def get_dog_park_photos(Photos: list, dog_park_id: int):
+    logging.info("get_dog_park_photos")
     for photo in Photos:
         with db:
             DogParkPhotos.insert({DogParkPhotos.dog_park_id: dog_park_id,
@@ -65,16 +79,41 @@ def get_dog_park_photos(Photos: list, dog_park_id: int):
 
 
 def get_dog_park_elements(Elements: list, dog_park_id: int):
-    pass
+    logging.info("get_dog_park_elements")
+    for element in Elements:
+        with db:
+            query = DogParkElements.select(fn.COUNT(DogParkElements.id)).where(DogParkElements.name == element)
+            count = query.scalar()
+            if count == 0:
+                DogParkElements.insert({DogParkElements.name: element}).execute()
+            
+            id = DogParkElements.select().where(DogParkElements.name == element)
+            DogParkIdElement.insert({DogParkIdElement.dog_park_id: dog_park_id,
+                                     DogParkIdElement.dog_park_element_id: id[0]}).execute()
+
+
+def get_dog_park_working_hours(WeekDays: list, dog_park_id: int):
+    logging.info("get_dog_park_working_hours")
+    with db:
+        query = {DogParkWorkingHours.dog_park_id: dog_park_id,
+                 DogParkWorkingHours.monday: WeekDays[0]['Hours'],
+                 DogParkWorkingHours.tuesday: WeekDays[1]['Hours'],
+                 DogParkWorkingHours.wednesday: WeekDays[2]['Hours'],
+                 DogParkWorkingHours.thursday: WeekDays[3]['Hours'],
+                 DogParkWorkingHours.friday: WeekDays[4]['Hours'],
+                 DogParkWorkingHours.saturday: WeekDays[5]['Hours'],
+                 DogParkWorkingHours.sunday: WeekDays[6]['Hours']}
+        
+        DogParkWorkingHours.insert(query).execute()
 
 
 def get_dogs_parks():
     skip = 0    
-    data_count = get_response("https://apidata.mos.ru/v1/datasets/2663/count", True)
+    # data_count = get_response("https://apidata.mos.ru/v1/datasets/2663/count", True)
     while True:
         # top = min(step, data_count)
-        data = get_response("https://apidata.mos.ru/v1/datasets/2663/rows?$top=500&$skip=" + str(skip))        
-        for i in range(len(data)):            
+        data = get_response("https://apidata.mos.ru/v1/datasets/2663/rows?$top=500&$skip=" + str(skip))
+        for i in range(len(data)):
             query = {
                     "global_id": data[i]['Cells']['global_id'],
                     "admarea_id": get_adm_area_id(data[i]['Cells']['AdmArea']),
@@ -87,19 +126,71 @@ def get_dogs_parks():
                     "longitude": data[i]['Cells']['geoData']['coordinates'][0],
                     "latitude": data[i]['Cells']['geoData']['coordinates'][1]
                     }
-            DogParks.insert(query).execute()
-            id = DogParks.select().where(DogParks.global_id == data[i]['Cells']['global_id'])
-            get_dog_park_photos(data[i]['Cells']['Photo'], id[0])
-            get_dog_park_elements(data[i]['Cells']['Elements'], id[0])
-            get_dog_park_working_hours()
+            with db:
+                DogParks.insert(query).execute()
+                dog_park_id = DogParks.select().where(DogParks.global_id == data[i]['Cells']['global_id'])[0]
+            get_dog_park_photos(data[i]['Cells']['Photo'], dog_park_id)
+            if isinstance(data[i]['Cells']['Elements'], str):
+                Elements = []
+                Elements.append(data[i]['Cells']['Elements'])
+            else:
+                Elements = data[i]['Cells']['Elements']
+            get_dog_park_elements(Elements, dog_park_id)
+            get_dog_park_working_hours(data[i]['Cells']['WorkingHours'], dog_park_id)
+            logging.info(f"dog_park_id: {dog_park_id} done")
         if len(data) < 500:
             break
         skip += 500
+    logging.info("dog parks data added")
 
+
+def get_object_oper_org_id(ObjectOperOrgName: str, ObjectOperOrgPhone: list):
+    logging.info("get_object_oper_org_id")
+    with db:
+        query = ObjectOperOrgs.select(fn.COUNT(ObjectOperOrgs.id)).where(ObjectOperOrgs.name == ObjectOperOrgName)
+        count = query.scalar()        
+        if count == 0:
+            ObjectOperOrgs.insert({ObjectOperOrgs.name: ObjectOperOrgName}).execute()
+        
+        object_oper_org_id = ObjectOperOrgs.select().where(ObjectOperOrgs.name == ObjectOperOrgName)
+
+        query = ObjectOperOrgPhones.select(fn.COUNT(ObjectOperOrgPhones.id)).where(ObjectOperOrgPhones.object_oper_org_id == object_oper_org_id \
+                                                                                   and ObjectOperOrgPhones.phone == ObjectOperOrgPhone)
+        count = query.scalar()
+        if count == 0:
+            ObjectOperOrgPhones.insert({ObjectOperOrgPhones.object_oper_org_id: object_oper_org_id,
+                                        ObjectOperOrgPhones.phone: ObjectOperOrgPhone}).execute()
+
+        return object_oper_org_id
 
 
 def get_bike_parking():
-    pass
+    skip = 0
+    while True:
+        data = get_response("https://apidata.mos.ru/v1/datasets/916/rows?$top=500&$skip=" + str(skip))
+        for i in range(len(data)):
+            query = {
+                    "global_id": data[i]['Cells']['global_id'],
+                    "name": data[i]['Cells']['Name'],
+                    "photo": data[i]['Cells']['Photo'],
+                    "admarea_id": get_adm_area_id(data[i]['Cells']['AdmArea']),
+                    "district_id": get_district_id(data[i]['Cells']['District']),
+                    "department_affiliation_id": get_department_affiliation_id(data[i]['Cells']['DepartmentalAffiliation']),
+                    "address": data[i]['Cells']['Address'],
+                    "capacity": data[i]['Cells']['Capacity'],
+                    "object_oper_org_id": get_object_oper_org_id(data[i]['Cells']['ObjectOperOrgName'],
+                                                                 data[i]['Cells']['ObjectOperOrgPhone']),
+                    "longitude": data[i]['Cells']['geoData']['coordinates'][0],
+                    "latitude": data[i]['Cells']['geoData']['coordinates'][1]
+                    }
+            with db:
+                BikeParking.insert(query).execute()
+                bike_park_id = BikeParking.select().where(BikeParking.global_id == data[i]['Cells']['global_id'])[0]
+                logging.info(f"bike_park_id: {bike_park_id} done")
+        if len(data) < 500:
+            break
+        skip += 500
+    logging.info("bike parks data added")
 
 
 def scraping_wiki():
@@ -116,17 +207,17 @@ def scraping_wiki():
         for _, row in admareas_df.iterrows():
             id = AdmAreas.select().where(AdmAreas.name == row.adm_area)
             if row.district.find("поселение") != -1:
-                query2.append({"name": row.district.replace(", поселение", ""),
+                query2.append({"name": row.district.replace("ё", "е").replace(", поселение", ""),
                             "district_type_id": 2,
                             "admarea_id": id[0]})
             elif row.district.find("городской округ") != -1:
-                query2.append({"name": row.district.replace(", городской округ", ""),
+                query2.append({"name": row.district.replace("ё", "е").replace(", городской округ", ""),
                             "district_type_id": 3,
                             "admarea_id": id[0]})
             else:
-                query2.append({"name": row.district,
+                query2.append({"name": row.district.replace("ё", "е"),
                             "district_type_id": 1,
-                            "admarea_id": id[0]})        
+                            "admarea_id": id[0]})
         Districts.insert_many(query2).execute()
         logging.info("districts table filled")
 
@@ -137,7 +228,7 @@ def create_db():
                           BikeParking, DogParks, DogParkPhotos, DogParkWorkingHours,
                           DogParkElements, DogParkIdElement, SportHalls,
                           SportHallWinterDimensions, SportHallPhotos, 
-                          SportHallWorkingHours])
+                          SportHallWorkingHours, ObjectOperOrgs, ObjectOperOrgPhones])
         logging.info("stone.db: tables created")
         query = [
             {"name": "район"},
@@ -148,9 +239,11 @@ def create_db():
         logging.info("district_types table filled")
 
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
     create_db()
     scraping_wiki()
+    # get_dogs_parks()
+    get_bike_parking()
     # with db:
     #     results = AdmAreas.select().where(AdmAreas.name == "СВАО")
     #     print(results[0])

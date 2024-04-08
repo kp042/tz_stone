@@ -85,9 +85,11 @@ if __name__ == "__main__":
     # create_db()
     # scraping_wiki()
     skip = 0    
-    data_count = get_response("https://apidata.mos.ru/v1/datasets/2663/count", True)    
+    data_count = get_response("https://apidata.mos.ru/v1/datasets/916/count", True)
+    print(data_count)
+    count = 0
     while True:        
-        data = get_response("https://apidata.mos.ru/v1/datasets/2663/rows?$top=500&$skip=" + str(skip))
+        data = get_response("https://apidata.mos.ru/v1/datasets/916/rows?$top=500&$skip=" + str(skip))
         query = []
         for i in range(len(data)):
             # AdmArea = data[i]['Cells']['AdmArea']
@@ -105,8 +107,8 @@ if __name__ == "__main__":
             # dep = "NULL" if data[i]['Cells']['Lighting'] not in ("да", "нет") else data[i]['Cells']['Lighting']
             # dep = data[i]['Cells']['Fencing'] == "да"
             # dep = data[i]['Cells']['geoData']['coordinates'][0]
-            
-            print(i, ": ", data[i]['Cells']['Photo'])
+            count += 1
+            print(count, "-", data[i]['global_id'], ": ", type(data[i]['Cells']['ObjectOperOrgPhone']), len(data[i]['Cells']['ObjectOperOrgPhone']))
             # print(dep, ": ", id, ": ", id[0])
             # print(dep, ": ", get_department_affiliation_id(dep))
 

@@ -46,15 +46,31 @@ class DepartmentAffiliations(BaseModel):
         db_table = "department_affiliations"
 
 
+class ObjectOperOrgs(BaseModel):
+    name = CharField()
+
+    class Meta:
+        db_name = "object_oper_orgs"
+
+
+class ObjectOperOrgPhones(BaseModel):
+    object_oper_org_id = ForeignKeyField(ObjectOperOrgs)
+    phone = CharField()
+
+    class Meta:
+        db_name = "object_oper_org_phones"
+
+
 class BikeParking(BaseModel):
-    name = CharField()    
-    # photo = CharField()  - photos
+    global_id = IntegerField()
+    name = CharField()
+    photo = CharField()
     admarea_id = ForeignKeyField(AdmAreas)
     district_id = ForeignKeyField(Districts)
     department_affiliation_id = ForeignKeyField(DepartmentAffiliations)
     address = CharField()
     capacity = IntegerField()
-    # object_oper_org_id = ForeignKeyField()
+    object_oper_org_id = ForeignKeyField(ObjectOperOrgs)
     longitude = DecimalField(max_digits=10, decimal_places=8)
     latitude = DecimalField(max_digits=11, decimal_places=8)
 
