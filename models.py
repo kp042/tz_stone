@@ -35,30 +35,11 @@ class Districts(BaseModel):
         db_table = "districts"
 
 
-# class DataInfo(BaseModel):
-#     name = CharField()
-   
-
 class DepartmentAffiliations(BaseModel):
     name = CharField()
 
     class Meta:
         db_table = "department_affiliations"
-
-
-# class ObjectOperOrgs(BaseModel):
-#     name = CharField()
-
-#     class Meta:
-#         db_name = "object_oper_orgs"
-
-
-# class ObjectOperOrgPhones(BaseModel):
-#     object_oper_org_id = ForeignKeyField(ObjectOperOrgs)
-#     phone = CharField()
-
-#     class Meta:
-#         db_name = "object_oper_org_phones"
 
 
 class BikeParking(BaseModel):
@@ -71,8 +52,7 @@ class BikeParking(BaseModel):
     address = CharField()
     capacity = IntegerField()
     object_oper_org_name = CharField()
-    object_oper_org_phone = CharField()
-    # object_oper_org_id = ForeignKeyField(ObjectOperOrgs)
+    object_oper_org_phone = CharField()    
     longitude = DecimalField(max_digits=11, decimal_places=9)
     latitude = DecimalField(max_digits=12, decimal_places=9)
 
@@ -140,15 +120,12 @@ class SportHalls(BaseModel):
     name_winter = CharField()
     photo_winter = CharField()
     admarea_id = ForeignKeyField(AdmAreas)
-    district_id = ForeignKeyField(Districts)
-    # department_affiliation_id = ForeignKeyField(DepartmentAffiliations)
+    district_id = ForeignKeyField(Districts)    
     address = CharField()
-    email = CharField()
-    website = CharField()
-    help_phone = CharField()
-    # ClarificationOfWorkingHoursWinter
+    email = CharField()    
+    help_phone = CharField()    
     has_equipment_rental = BooleanField()
-    equipment_rental_comments = CharField() # отдельную таблицу?
+    equipment_rental_comments = CharField()
     has_tech_service = BooleanField()
     tech_serv_comments = CharField()
     has_dressing_room = BooleanField()
@@ -162,7 +139,7 @@ class SportHalls(BaseModel):
     lighting = CharField()
     surface_type_winter = CharField()
     seats = IntegerField()
-    paid = CharField()
+    paid = BooleanField()
     paid_comments = CharField()
     disability_friendly = CharField()
     service_winter = CharField()
@@ -175,20 +152,21 @@ class SportHalls(BaseModel):
 
 class SportHallWinterDimensions(BaseModel):
     sport_hall_id = ForeignKeyField(SportHalls)
-    square = IntegerField()
-    length = IntegerField()
-    wifth = IntegerField()
+    square = FloatField()
+    length = FloatField()
+    width = FloatField()
     
     class Meta:
         db_table = "sport_hall_winter_dimensions"
 
 
-class SportHallPhotos(BaseModel):
+class SportHallWebsites(BaseModel):
     sport_hall_id = ForeignKeyField(SportHalls)
-    photo = CharField()
+    website = CharField()
+    negotiability = BooleanField()
 
     class Meta:
-        db_table = "sport_hall_photos"
+        db_table = "sport_hall_websites"
 
 
 class SportHallWorkingHours(BaseModel):

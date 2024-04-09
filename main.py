@@ -58,7 +58,7 @@ def get_department_affiliation_id(DepartamentalAffiliation: str):
     logging.info("get_department_affiliation_id")
     with db:
         query = DepartmentAffiliations.select(fn.COUNT(DepartmentAffiliations.id)).where(DepartmentAffiliations.name == DepartamentalAffiliation)
-        count = query.scalar()        
+        count = query.scalar()
         if count == 0:
             DepartmentAffiliations.insert({DepartmentAffiliations.name: DepartamentalAffiliation}).execute()
         
@@ -104,10 +104,8 @@ def get_dog_park_working_hours(WeekDays: list, dog_park_id: int):
 
 
 def get_dogs_parks():
-    skip = 0    
-    # data_count = get_response("https://apidata.mos.ru/v1/datasets/2663/count", True)
+    skip = 0 
     while True:
-        # top = min(step, data_count)
         data = get_response("https://apidata.mos.ru/v1/datasets/2663/rows?$top=500&$skip=" + str(skip))
         for i in range(len(data)):
             query = {
@@ -140,26 +138,6 @@ def get_dogs_parks():
     logging.info("dog parks data added")
 
 
-# def get_object_oper_org_id(ObjectOperOrgName: str, ObjectOperOrgPhone: list):
-#     logging.info("get_object_oper_org_id")
-#     with db:
-#         query = ObjectOperOrgs.select(fn.COUNT(ObjectOperOrgs.id)).where(ObjectOperOrgs.name == ObjectOperOrgName)
-#         count = query.scalar()        
-#         if count == 0:
-#             ObjectOperOrgs.insert({ObjectOperOrgs.name: ObjectOperOrgName}).execute()
-        
-#         object_oper_org_id = ObjectOperOrgs.select().where(ObjectOperOrgs.name == ObjectOperOrgName)
-
-#         query = ObjectOperOrgPhones.select(fn.COUNT(ObjectOperOrgPhones.id)).where(ObjectOperOrgPhones.object_oper_org_id == object_oper_org_id \
-#                                                                                    and ObjectOperOrgPhones.phone == ObjectOperOrgPhone)
-#         count = query.scalar()
-#         if count == 0:
-#             ObjectOperOrgPhones.insert({ObjectOperOrgPhones.object_oper_org_id: object_oper_org_id,
-#                                         ObjectOperOrgPhones.phone: ObjectOperOrgPhone}).execute()
-
-#         return object_oper_org_id
-
-
 def get_bike_parking():
     skip = 0
     while True:
@@ -175,9 +153,7 @@ def get_bike_parking():
                     "address": data[i]['Cells']['Address'],
                     "capacity": data[i]['Cells']['Capacity'],
                     "object_oper_org_name": "ГКУ Центр организации дорожного движения Правительства Москвы",
-                    "object_oper_org_phone": "(495) 361-78-07",
-                    # "object_oper_org_id": get_object_oper_org_id(data[i]['Cells']['ObjectOperOrgName'],
-                    #                                              data[i]['Cells']['ObjectOperOrgPhone']),
+                    "object_oper_org_phone": "(495) 361-78-07",                    
                     "longitude": data[i]['Cells']['geoData']['coordinates'][0],
                     "latitude": data[i]['Cells']['geoData']['coordinates'][1]
                     }
@@ -191,30 +167,80 @@ def get_bike_parking():
     logging.info("bike parks data added")
 
 
-def get_sport_hall_working_hours():
-    pass
+def get_sport_hall_working_hours(WeekDays: list, sport_hall_id: int):
+    logging.info("get_sport_hall_working_hours")
+    with db:
+        query = {SportHallWorkingHours.sport_hall_id: sport_hall_id,
+                 SportHallWorkingHours.monday: WeekDays[0]['Hours'],
+                 SportHallWorkingHours.tuesday: WeekDays[1]['Hours'],
+                 SportHallWorkingHours.wednesday: WeekDays[2]['Hours'],
+                 SportHallWorkingHours.thursday: WeekDays[3]['Hours'],
+                 SportHallWorkingHours.friday: WeekDays[4]['Hours'],
+                 SportHallWorkingHours.saturday: WeekDays[5]['Hours'],
+                 SportHallWorkingHours.sunday: WeekDays[6]['Hours']}        
+        SportHallWorkingHours.insert(query).execute()
+
+
+def get_sport_hall_dimensions_winter(Dimensions: dict, sport_hall_id: int):
+    logging.info("get_sport_hall_dimensions_winter")
+    with db:
+        query = {SportHallWinterDimensions.sport_hall_id: sport_hall_id,
+                 SportHallWinterDimensions.square: Dimensions['Square'],
+                 SportHallWinterDimensions.length: Dimensions['Length'],
+                 SportHallWinterDimensions.width: Dimensions['Width']}
+        SportHallWinterDimensions.insert(query).execute()
+
+
+def url_check(url: str):
+    if "http://" not in url and "https://" not in url:
+        try:
+            response = requests.get("http://" + url)
+            if response.status_code == 200:
+                return True        
+            response = requests.get("https://" + url)
+            if response.status_code == 200:
+                return True
+            return False
+        except requests.exceptions.RequestException as e:
+            logging.info(f"url_check error: {e}")
+            return False            
+    elif "http://" in url or "https://" in url:
+        try:
+            r = requests.head(url)
+            return r.status_code == 200
+        except requests.exceptions.RequestException as e:
+            return False
+
+
+def get_sport_hall_website(website: str, sport_hall_id: int):
+    if len(website) > 0 and website is not None:
+        with db:
+            query = {SportHallWebsites.sport_hall_id: sport_hall_id,
+                 SportHallWebsites.website: website,
+                 SportHallWebsites.negotiability: url_check(website)}
+            SportHallWebsites.insert(query).execute()
 
 
 def get_sport_halls():
     skip = 0
     while True:
-        data = get_response("https://apidata.mos.ru/v1/datasets/916/rows?$top=500&$skip=" + str(skip))
+        data = get_response("https://apidata.mos.ru/v1/datasets/60622/rows?$top=500&$skip=" + str(skip))
         for i in range(len(data)):
+            logging.info(f"global_id: {data[i]['global_id']}")
             query = {
                     "global_id": data[i]['global_id'],
-                    "name": data[i]['Cells']['Name'],
+                    "name": data[i]['Cells']['ObjectName'],
                     "name_winter": data[i]['Cells']['NameWinter'],
                     "photo_winter": data[i]['Cells']['PhotoWinter'][0]['Photo'],
                     "admarea_id": get_adm_area_id(data[i]['Cells']['AdmArea']),
                     "district_id": get_district_id(data[i]['Cells']['District']),
                     "address": data[i]['Cells']['Address'],
-                    "email": data[i]['Cells']['Email'],
-                    "website": check_website_response(data[i]['Cells']['WebSite']),
-                    "help_phone": data[i]['Cells']['HelpPhone'] if len(data[i]['Cells']['HelpPhone']) != 0 else None,
+                    "email": data[i]['Cells']['Email'],                    
+                    "help_phone": data[i]['Cells']['HelpPhone'] if len(data[i]['Cells']['HelpPhone']) != 0 else "",
                     "has_equipment_rental": data[i]['Cells']['HasEquipmentRental'] == "да",
-                    "equipment_rental_comments": data[i]['Cells']['EquipmentRentalComments'], # add table 
+                    "equipment_rental_comments": data[i]['Cells']['EquipmentRentalComments'],
                     "has_tech_service": data[i]['Cells']['HasTechService'] == "да",
-                    "tech_serv_comments": data[i]['Cells']['TechServiceComments'], # add table 
+                    "tech_serv_comments": data[i]['Cells']['TechServiceComments'],
                     "has_dressing_room": data[i]['Cells']['HasDressingRoom'] == "да",
                     "has_eatery": data[i]['Cells']['HasEatery'] == "да",
                     "has_toilet": data[i]['Cells']['HasToilet'] == "да",
@@ -226,14 +252,20 @@ def get_sport_halls():
                     "lighting": data[i]['Cells']['Lighting'],
                     "surface_type_winter": data[i]['Cells']['SurfaceTypeWinter'],
                     "seats": data[i]['Cells']['Seats'],
-                    "paid": data[i]['Cells']['Paid'], # check
-                    "paid_comments": data[i]['Cells']['PaidComments'], # check
-                    "disability_friendly": data[i]['Cells']['DisabilityFriendly'], # check
+                    "paid": data[i]['Cells']['Paid'] == "платно",
+                    "paid_comments": data[i]['Cells']['PaidComments'], 
+                    "disability_friendly": "" if data[i]['Cells']['DisabilityFriendly'] is None else data[i]['Cells']['DisabilityFriendly'], 
                     "service_winter": data[i]['Cells']['ServicesWinter'],
                     "longitude": data[i]['Cells']['geoData']['coordinates'][0],
                     "latitude": data[i]['Cells']['geoData']['coordinates'][1]
                     }
-
+            with db:
+                SportHalls.insert(query).execute()
+                sport_hall_id = SportHalls.select().where(SportHalls.global_id == data[i]['Cells']['global_id'])[0]
+                logging.info(f"sport_hall_id: {sport_hall_id} done")
+            get_sport_hall_website(data[i]['Cells']['WebSite'], sport_hall_id)
+            get_sport_hall_working_hours(data[i]['Cells']['WorkingHoursWinter'], sport_hall_id)
+            get_sport_hall_dimensions_winter(data[i]['Cells']['DimensionsWinter'][0], sport_hall_id)
         if len(data) < 500:
             break
         skip += 500
@@ -274,9 +306,8 @@ def create_db():
     with db:
         db.create_tables([AdmAreas, DistrictTypes, Districts, DepartmentAffiliations,
                           BikeParking, DogParks, DogParkPhotos, DogParkWorkingHours,
-                          DogParkElements, DogParkIdElement, SportHalls,
-                          SportHallWinterDimensions, SportHallPhotos, 
-                          SportHallWorkingHours])
+                          DogParkElements, DogParkIdElement, SportHalls, SportHallWebsites,
+                          SportHallWinterDimensions, SportHallWorkingHours])
         logging.info("stone.db: tables created")
         query = [
             {"name": "район"},
@@ -290,12 +321,7 @@ def create_db():
 if __name__ == "__main__":
     create_db()
     scraping_wiki()
-    # get_dogs_parks()
+    get_dogs_parks()
     get_bike_parking()
-    # with db:
-    #     results = AdmAreas.select().where(AdmAreas.name == "СВАО")
-    #     print(results[0])
-        # for result in results:
-        #     print(result.id)
-
+    get_sport_halls()
 
